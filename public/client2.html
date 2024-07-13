@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Client 2</title>
+</head>
+<body>
+  <h1>WebSocket Client 2</h1>
+  <ul id="messages"></ul>
+
+  <script>
+    const socket = new WebSocket(`wss://${window.location.hostname}`);
+
+    socket.onopen = function(event) {
+      console.log('Connected to WebSocket server');
+    };
+
+    socket.onmessage = function(event) {
+      const messages = document.getElementById('messages');
+      const messageItem = document.createElement('li');
+      messageItem.textContent = event.data;
+      messages.appendChild(messageItem);
+    };
+
+    socket.onclose = function(event) {
+      console.log('Disconnected from WebSocket server');
+    };
+  </script>
+</body>
+</html>
