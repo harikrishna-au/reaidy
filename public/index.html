@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Client 1</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <style>
+      #visemeImage {
+          width: 500px;  /* Adjust the size as needed */
+          height: 500px; /* Adjust the size as needed */
+      }
+  </style>
+</head>
+<body >
+    <div class="container">
+        <h1>Text to Speech</h1>
+        <textarea id="textInput" placeholder="Enter your text here..."></textarea>
+        <div id="spokenText"></div>
+        <button onclick="sendMessage()">Send</button>
+       <button onclick="setupTypingDetection()">
+         viseme
+      </button>
+        <ul id="messages"></ul>
+    </div>
+    <br><br>
+    <img id="visemeImage" src="images/neutral.png" alt="Viseme Image">
+    
+    <script>
+        let typingTimer;
+        let doneTypingInterval = 2000; // Time in ms (2 seconds)
+
+        function convertToViseme(text) {
+            const visemes = {
+                'a': 'ah', 'e': 'ee', 'i': 'ee', 'o': 'oh', 'u': 'uh',
+                'b': 'm', 'p': 'm', 'm': 'm',
+                'f': 'f', 'v': 'f',
+                'th': 'd', 'n': 'd', 'g': 'd',
+                'r': 'r',
+                'l': 'l',
+                's': 's', 'ch': 's', 'j': 's', 'sh': 's', 'z': 's',
+                'w': 'w-oo', 'q': 'w-oo',
+                'h': 'neutral', 'k': 'neutral', 'x': 'neutral',
+                ' ': 'neutral'
+            };
+
+            let result = [];
+            let i = 0;
+            while (i < text.length) {
+                if (i + 1 < text.length && (text[i] + text[i + 1]) in visemes) {
+                    result.push(visemes[text[i] + text[i + 1]]);
+                    i += 2;
+                } else {
+                    result.push(visemes[text[i]] || 'neutral');
+                    i++;
+                }
+            }
+            return result;
+        }
+
+        function doneTyping() {
+            const inputText = document.getElementById('textInput').value;
+            const visemeSequence = convertToViseme(inputText.toLowerCase());
+            displayVisemeSequence(visemeSequence);
+        }
+
+         function displayVisemeSequence(sequence) {
+            let index = 0;
+            function showNextViseme() {
+                if (index < sequence.length) {
+                    document.getElementById('visemeImage').src = `images/${sequence[index]}.png`;
+                    index++;
+                    setTimeout(showNextViseme, 100);
+                } else {
+                    resetVisemeImage();
+                }
+            }
+            showNextViseme();
+        }
+
+
+        function resetVisemeImage() {
+            document.getElementById('visemeImage').src = 'images/neutral.png';
+        }
+
+        function setupTypingDetection() {
+            const input = document.getElementById('textInput');
+            input.addEventListener('keyup', () => {
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(doneTyping, doneTypingInterval);
+            });
+          console.log("working")
+
+            input.addEventListener('keydown', () => {
+                clearTimeout(typingTimer);
+            });
+        }
+    </script>
+    
+    <script>
+        const socket = new WebSocket(`wss://${window.location.hostname}`);
+
+        socket.onopen = function(event) {
+            console.log('Connected to WebSocket server');
+        };
+
+        socket.onmessage = function(event) {
+            const messages = document.getElementById('messages');
+            const messageItem = document.createElement('li');
+            messageItem.textContent = event.data;
+            messages.appendChild(messageItem);
+        };
+
+        socket.onclose = function(event) {
+            console.log('Disconnected from WebSocket server');
+        };
+
+        function sendMessage() {
+            const messageInput = document.getElementById('textInput');
+            const message = messageInput.value;
+            socket.send(message);
+            messageInput.value = '';
+        }
+    </script>
+</body>
+</html>
